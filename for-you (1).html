@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A little message for you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9e4ff;--card:#fff9fc;--ink:#2a1b5e;--accent:#ff5c8a;--soft:#cfc6ff}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(circle at 20% 15%,#fff 0,transparent 40%),var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--card);width:100%;max-width:440px;border-radius:28px;padding:36px 28px;box-shadow:0 18px 50px rgba(42,27,94,.18);text-align:center}
+.screen{display:none;animation:in .35s ease}
+.screen.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h1{font-size:2rem;line-height:1.1;margin:0 0 14px;font-weight:800}
+p{font-size:1.05rem;line-height:1.55;margin:0 0 22px}
+.emoji{font-size:3rem;display:block;margin-bottom:10px}
+.btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:13px 26px;cursor:pointer;transition:transform .15s}
+button:active{transform:scale(.96)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.yes{background:var(--accent);color:#fff}
+.no{background:var(--soft);color:var(--ink)}
+input{font:inherit;width:100%;padding:14px 18px;border-radius:16px;border:2px solid var(--soft);background:#fff;color:var(--ink);margin-bottom:16px;text-align:center}
+.err{color:#c0224f;font-size:.9rem;min-height:1.2em;margin:-6px 0 10px}
+.tiny{font-size:.8rem;opacity:.65;margin-top:18px;margin-bottom:0}
+@media (prefers-reduced-motion:reduce){.screen{animation:none}}
+</style>
+</head>
+<body>
+<main class="card">
+
+  <section class="screen on" id="s-intro">
+    <span class="emoji">💌</span>
+    <h1 id="hello"></h1>
+    <p id="feelings"></p>
+    <div class="btns"><button class="yes" onclick="go('s-q1')">Okay, go on</button></div>
+  </section>
+
+  <section class="screen" id="s-q1">
+    <span class="emoji">👀</span>
+    <h1>Question 1</h1>
+    <p>Are you single right now?</p>
+    <div class="btns">
+      <button class="yes" onclick="answer('single','yes','s-q2')">Yes</button>
+      <button class="no" onclick="answer('single','no','s-end-no')">No</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-q2">
+    <span class="emoji">💬</span>
+    <h1>Question 2</h1>
+    <p>Would you like to talk to me?</p>
+    <div class="btns">
+      <button class="yes" onclick="answer('talk','yes','s-insta')">Yes</button>
+      <button class="no" onclick="answer('talk','no','s-end-no')">Not really</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-insta">
+    <span class="emoji">✨</span>
+    <h1>Last one</h1>
+    <p>Drop your Instagram username and I'll message you.</p>
+    <input id="insta" type="text" placeholder="@yourusername" autocomplete="off" autocapitalize="none" aria-label="Instagram username">
+    <div class="err" id="err" role="alert"></div>
+    <div class="btns"><button class="yes" id="send" onclick="submitInsta()">Send</button></div>
+    <p class="tiny">Only I will see this, and I'll only use it to message you.</p>
+  </section>
+
+  <section class="screen" id="s-end-yes">
+    <span class="emoji">🎉</span>
+    <h1>Got it, thank you!</h1>
+    <p>I'll message you soon. Really glad you said yes.</p>
+  </section>
+
+  <section class="screen" id="s-end-no">
+    <span class="emoji">🤝</span>
+    <h1>All good, thanks for being honest</h1>
+    <p>No hard feelings at all. I appreciate you taking a minute to read this. Take care!</p>
+  </section>
+
+</main>
+
+<script>
+/* ===== EDIT THESE ===== */
+const HER_NAME  = "Hey";                        // e.g. "Hey Priya"
+const MY_NAME   = "Koushik";
+const FEELINGS  = "I've had a crush on you for a while, and I wanted to tell you honestly instead of staying quiet. No pressure at all. Just two quick questions, and you can say no to anything.";
+const ACCESS_KEY = "0c881d4a-00a7-4021-8ef3-ba19dc71cab2";   // from web3forms.com
+/* ====================== */
+
+document.getElementById('hello').textContent = HER_NAME + ", it's " + MY_NAME;
+document.getElementById('feelings').textContent = FEELINGS;
+
+const answers = {};
+function go(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+function answer(key, val, next){
+  answers[key] = val;
+  if (next === 's-end-no') save(''); // log the answer, no handle
+  go(next);
+}
+
+function save(handle){
+  if (!ACCESS_KEY || ACCESS_KEY.startsWith('PASTE')) return Promise.resolve();
+  const data = {
+    access_key: ACCESS_KEY,
+    subject: handle ? 'She replied with her Instagram!' : 'She replied to your page',
+    single: answers.single || '',
+    talk: answers.talk || '',
+    instagram: handle || '(not shared)',
+    time: new Date().toLocaleString()
+  };
+  return fetch('https://api.web3forms.com/submit', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify(data)
+  }).catch(()=>{});
+}
+
+async function submitInsta(){
+  const raw = document.getElementById('insta').value.trim().replace(/^@/, '');
+  const err = document.getElementById('err');
+  if (!/^[A-Za-z0-9._]{1,30}$/.test(raw)){
+    err.textContent = 'Type a valid Instagram username (letters, numbers, . and _).';
+    return;
+  }
+  err.textContent = '';
+  const btn = document.getElementById('send');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  await save(raw);
+  go('s-end-yes');
+}
+</script>
+</body>
+</html>
